@@ -38,7 +38,7 @@ ols %>% summary() %>% tidy() %>% kable()
 cat(paste0("TRAIN MSE: ", (mse_entire <- summary(ols) %>% {.$residual^2} %>% mean())))
 ```
 
-All of our predictors are statistically significant at 0.1 confidence level. The magnitude of coefficients on age and education are relatively small comparing to the other and have relatively larger p-values. The simple linear regression model has a mean squared error of 395.2701 (the loser to zero, the better our model perfoms), indicating that our estimates are about 20 points away of the true population value. Since we only have five predictors and a simple linear regression model, only 27.95% variance in the dependent variables are explained by our model. Therefore, it is normal to expect a large MSE. 
+All of our predictors are statistically significant at 0.1 confidence level. The magnitude of coefficients on age and education are relatively small comparing to the other and have relatively larger p-values. The simple linear regression model has a mean squared error of 395.2701 (the loser to zero, the better our model perfoms), indicating that our estimates on average are about 20 points away of the true population value. Since we only have five predictors and a simple linear regression model, only 27.95% variance in the dependent variables are explained by our model. Therefore, it is normal to expect a large MSE. 
 
 2. (30 points) Calculate the test MSE of the model using the simple holdout validation approach.
     * (5 points) Split the sample set into a training set (50%) and a holdout set (50%). **Be sure to set your seed prior to this part of your code to guarantee reproducibility of results.**
