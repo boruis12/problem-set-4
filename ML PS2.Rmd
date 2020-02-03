@@ -6,7 +6,7 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, cache = TRUE)
 library(tidyverse)
 library(dplyr)
 library(broom)
@@ -38,7 +38,7 @@ ols %>% summary() %>% tidy() %>% kable()
 cat(paste0("TRAIN MSE: ", (mse_entire <- summary(ols) %>% {.$residual^2} %>% mean())))
 ```
 
-All of our predictors are statistically significant at 0.1 confidence level. The magnitude of coefficients on age and education are relatively small comparing to the other and have relatively larger p-values. The simple linear regression model has a mean squared error of 395.2701 (the loser to zero, the better our model perfoms). Since we only have five predictors and a simple linear regression model, only 27.95% variance in the dependent variables are explained by our model. Therefore, it is normal to expect a large MSE. 
+All of our predictors are statistically significant at 0.1 confidence level. The magnitude of coefficients on age and education are relatively small comparing to the other and have relatively larger p-values. The simple linear regression model has a mean squared error of 395.2701 (the loser to zero, the better our model perfoms), indicating that our estimates are about 20 points away of the true population value. Since we only have five predictors and a simple linear regression model, only 27.95% variance in the dependent variables are explained by our model. Therefore, it is normal to expect a large MSE. 
 
 2. (30 points) Calculate the test MSE of the model using the simple holdout validation approach.
     * (5 points) Split the sample set into a training set (50%) and a holdout set (50%). **Be sure to set your seed prior to this part of your code to guarantee reproducibility of results.**
@@ -124,6 +124,6 @@ ols %>% summary() %>% tidy() %>%{.[, 1:3]} %>%
   `colnames<-`(c("term", "ols_estimate", "ols_se", "bootstrap_estimate", "bootstrap_se")) %>% kable()
 ```
 
-The bootstrapped estimates of the five parameters and their standard errors are largely identical with minimal differences. The magnitude of traditional estimates are slightly greater than the bootstrapped estimates (except Democrat variable). The bootstrapped standard errors is slightly greater than the standard error of traditional estimates on age, democrat and republican variables. However, the author belives that such differences are negligible. 
+The bootstrapped estimates of the five parameters and their standard errors are largely identical with minimal differences. The magnitude of traditional estimates are slightly greater than the bootstrapped estimates (except Democrat variable). The bootstrapped standard errors is slightly greater than the standard error of traditional estimates on age, democrat and republican variables. However, the author belives that such differences are negligible. The virtually identical results indicate that our estimates and the standard errors of our estimates in Q.1 are accurate. 
 
 The traditional estimates are generated from a linear regression model. The standard errors provide an accurate estimates of the average amount of differences between the estimated parameters $\hat{\beta}$ and the true population parameters $\beta$ if the assumptions of linear regression holds. If these assumptions are violated (i.e., non-constant error variance, or "heteroskedasticity"), the standard errors will not be accurate. Therefore, bootstrap estimates in general are more robust because they do not rely any distributional assumptions. bootstrapping method is often used to estimate how close our sample answers are to the true population answers, when we are uncertain about the shape of the population or our assumptions about the shape of population are violated. By using bootstrapping, we can learn about the population from the sample we have.
