@@ -59,7 +59,7 @@ cat(paste0("TEST MSE: ", mse_test))
 
 ```
 
-The test MSE is 392.3810. It is 2.8891 smaller than the MSE obtained in Q.1 (when the entire sample is used). Generally, we would expect the test-MSE to be larger because our original training sample is splited into training and test data set and hence has less number of observations. As the training data set reduced to half, less information is provided to train our model. However, this phenomenon can be explained by this specific seed of random split of train and test data set. Getting a smaller MSE is possible if we are lucky.  
+The test MSE is 392.3810. It is 2.8891 smaller than the MSE obtained in Q.1 (when the entire sample is used). Generally, we would expect the test-MSE to be larger because our original training sample is splited into training and test data set by half and has less number of observations. As the training data set reduced to half, less information is provided to train our model and error rate tends to be overestimated. However, error rate can be highly variable depending on which observations fall into the training set. Getting a smaller MSE is possible if we are lucky. 
 
 3. (30 points) Repeat the simple validation set approach from the previous question 1000 times, using 1000 different splits of the observations into a training set and a test/validation set. Visualize your results as a sampling distribution ( *_hint_*: think histogram or density plots). Comment on the results obtained.
 
