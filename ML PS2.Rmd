@@ -1,0 +1,129 @@
+---
+title: "ML PS2"
+author: "borui sun"
+date: "1/28/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(tidyverse)
+library(dplyr)
+library(broom)
+library(caret)
+library(rsample)
+library(knitr)
+
+theme_set(
+  theme_bw()+
+    theme(plot.title = element_text(hjust = 0.5)) +
+    theme(plot.subtitle = element_text(hjust = 0.5)) +
+    theme(plot.tag.position = c(0.8, 0)) +
+    theme(plot.tag = element_text(size=8)) +
+    theme(strip.text.y = element_blank())
+          )
+
+nes2008 <- read_csv("nes2008.csv")
+```
+
+
+#### The Questions
+
+1. (10 points) Estimate the MSE of the model using the traditional approach. That is, fit the linear regression model using the _entire_ dataset and calculate the mean squared error for the _entire_ dataset. Present and discuss your results at a simple, high level.
+
+```{r}
+ols <- lm(biden~ ., data = nes2008)
+
+ols %>% summary() %>% tidy() %>% kable()
+cat(paste0("TRAIN MSE: ", (mse_entire <- summary(ols) %>% {.$residual^2} %>% mean())))
+```
+
+All of our predictors are statistically significant at 0.1 confidence level. The magnitude of coefficients on age and education are relatively small comparing to the other and have relatively larger p-values. The simple linear regression model has a mean squared error of 395.2701 (the loser to zero, the better our model perfoms). Since we only have five predictors and a simple linear regression model, only 27.95% variance in the dependent variables are explained by our model. Therefore, it is normal to expect a large MSE. 
+
+2. (30 points) Calculate the test MSE of the model using the simple holdout validation approach.
+    * (5 points) Split the sample set into a training set (50%) and a holdout set (50%). **Be sure to set your seed prior to this part of your code to guarantee reproducibility of results.**
+    * (5 points) _Fit_ the linear regression model using _only_ the _training_ observations.
+    * (10 points) Calculate the _MSE_ using _only_ the _test_ set observations.
+    * (10 points) How does this value compare to the training MSE from question 1? Present numeric comparison and discuss a bit.
+    
+```{r}
+set.seed(123)
+
+split <- initial_split(nes2008, prop = .5)
+train <- training(split)
+test <- testing(split)
+    
+ols_train <- lm(biden~., data = train)
+mse_test <- mean((test$biden - predict(ols_train, test))^2)
+cat(paste0("TEST MSE: ", mse_test))
+
+```
+
+The test MSE is 392.3810. It is 2.8891 smaller than the MSE obtained in Q.1 (when the entire sample is used). Generally, we would expect the test-MSE to be larger because our original training sample is splited into training and test data set and hence has less number of observations. As the training data set reduced to half, less information is provided to train our model. However, this phenomenon can be explained by this specific seed of random split of train and test data set. Getting a smaller MSE is possible if we are lucky.  
+
+3. (30 points) Repeat the simple validation set approach from the previous question 1000 times, using 1000 different splits of the observations into a training set and a test/validation set. Visualize your results as a sampling distribution ( *_hint_*: think histogram or density plots). Comment on the results obtained.
+
+```{r}
+set.seed(234)
+repetition <- 1000
+
+results <- data.frame(matrix(nrow = 0, ncol = 0))
+
+for (i in c(1:repetition)){
+  
+  split <- initial_split(nes2008, prop = .5)
+  train <- training(split)
+  test <- testing(split)
+  
+  ols <- lm(biden~., data = train)
+  mse <- mean((test[["biden"]] - predict(ols, test))^2)
+  
+  id <- i
+  simulation_result <- data.frame(id, mse)
+  results <- bind_rows(results, simulation_result)
+  
+  # print(paste0("-------- Done with simulation ", i, " of ", N))
+}
+
+mean_mse <- mean(results$mse)
+
+results %>%
+  ggplot(aes(x = mse)) +
+  geom_density() +
+  geom_vline(aes(xintercept = mean_mse, color = "Mean MSE of 1,000 Simulations"), size = 1) +
+  geom_vline(aes(xintercept = mse_test, color = "Test MSE (Q.2)"), size = 1) +
+  geom_vline(aes(xintercept = mse_entire, color = "Train MSE (Q.1)"), size = 1) +
+  labs(x = "Test MSE", title = "Fig.1 MSE Distribution of 1,000 Simulations")
+```
+```{r}
+summary(results$mse) %>% tidy() %>% kable()
+```
+
+The MSEs obtained from 1,000 simulations follows a normal distribution with a mean of 399.0932. From Fig.1, we can see that the average MSE of using a 50% holdout validation appraoch is larger than the MSE using the entire data set in Q1. This results support our explanation in Q.2. As sample size decreases, less information is provided to train our model and hence leads to higher MSE. It is possible to obtain a smaller MSE using only half of the data set but it greatly depends the random split. In addition, we also notice that the difference of MSE in Q.1 and the average MSE in 1,000 simulations is not very large. The two MSEs are very close to each other (395 and 399). 
+
+4. (30 points) Compare the estimated parameters and standard errors from the original model in question 1 (the model estimated using _all of the available data_) to parameters and standard errors estimated using the bootstrap ($B = 1000$). Comparison should include, at a minimum, both numeric output as well as discussion on differences, similarities, etc. Talk also about the conceptual use and impact of bootstrapping.
+
+
+```{r}
+set.seed(123)
+lm_coefs <- function(splits, ...) {
+  mod <- lm(..., data = analysis(splits))
+  tidy(mod)
+}
+
+ bootstrap_coef <- nes2008 %>%
+   bootstraps(1000) %>%
+   mutate(coef = map(splits, lm_coefs, as.formula(biden ~ .))) %>%
+   unnest(coef) %>%
+   group_by(term) %>%
+   summarise(b_estimate = mean(estimate),
+             b_se = sd(estimate, na = TRUE))
+
+ols %>% summary() %>% tidy() %>%{.[, 1:3]} %>%
+  left_join(bootstrap_coef) %>%
+  `colnames<-`(c("term", "ols_estimate", "ols_se", "bootstrap_estimate", "bootstrap_se")) %>% kable()
+```
+
+The bootstrapped estimates of the five parameters and their standard errors are largely identical with minimal differences. The magnitude of traditional estimates are slightly greater than the bootstrapped estimates (except Democrat variable). The bootstrapped standard errors is slightly greater than the standard error of traditional estimates on age, democrat and republican variables. However, the author belives that such differences are negligible. 
+
+The traditional estimates are generated from a linear regression model. The standard errors provide an accurate estimates of the average amount of differences between the estimated parameters $\hat{\beta}$ and the true population parameters $\beta$ if the assumptions of linear regression holds. If these assumptions are violated (i.e., non-constant error variance, or "heteroskedasticity"), the standard errors will not be accurate. Therefore, bootstrap estimates in general are more robust because they do not rely any distributional assumptions. bootstrapping method is often used to estimate how close our sample answers are to the true population answers, when we are uncertain about the shape of the population or our assumptions about the shape of population are violated. By using bootstrapping, we can learn about the population from the sample we have.
